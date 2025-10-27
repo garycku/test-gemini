@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.js": "/test-gemini/static/js/main.b8a36005.js",
+    "main.js": "/test-gemini/static/js/main.7f120653.js",
     "index.html": "/test-gemini/index.html",
-    "main.b8a36005.js.map": "/test-gemini/static/js/main.b8a36005.js.map"
+    "main.7f120653.js.map": "/test-gemini/static/js/main.7f120653.js.map"
   },
   "entrypoints": [
-    "static/js/main.b8a36005.js"
+    "static/js/main.7f120653.js"
   ]
 }
