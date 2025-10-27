@@ -1,17 +1,14 @@
 import React, { useState, useMemo } from 'react';
 
-// --- 類型定義 ---
 interface Restaurant {
   id: number;
   name: string;
-  category: '外食 (Dine-in)' | '外帶 (Takeout)' | '速食 (Fast Food)';
+  category: '外食 (Dine-in)' | '外帶 (Takeout)' | '速食 (Fast Food)' | '外食/外帶 (Dine-in/Takeout)';
 }
 
-// 所有可用的類別
-const allCategories = ['外食 (Dine-in)', '外帶 (Takeout)', '速食 (Fast Food)'] as const;
+const allCategories = ['外食 (Dine-in)', '外帶 (Takeout)', '速食 (Fast Food)', '外食/外帶 (Dine-in/Takeout)'] as const;
 type Category = typeof allCategories[number];
 
-// --- 初始餐廳清單 (已修正重複 ID 並加入類別) ---
 const initialRestaurants: Restaurant[] = [
   { id: 1, name: "楊國福麻辣燙", category: "外食 (Dine-in)" },
   { id: 2, name: "Bentolious便當", category: "外帶 (Takeout)" },
@@ -19,9 +16,9 @@ const initialRestaurants: Restaurant[] = [
   { id: 4, name: "Chipotle", category: "速食 (Fast Food)" },
   { id: 5, name: "The Habit", category: "速食 (Fast Food)" },
   { id: 6, name: "Papa Johns pizza", category: "外帶 (Takeout)" },
-  { id: 7, name: "海南雞飯", category: "外食 (Dine-in)" },
-  { id: 8, name: "Demiya咖喱飯", category: "外食 (Dine-in)" },
-  { id: 9, name: "鯉魚門", category: "外食 (Dine-in)" },
+  { id: 7, name: "海南雞飯", category: "外食/外帶 (Dine-in/Takeout)" },
+  { id: 8, name: "Demiya咖喱飯", category: "外食/外帶 (Dine-in/Takeout)" },
+  { id: 9, name: "鯉魚門", category: "外食/外帶 (Dine-in/Takeout)" },
   { id: 10, name: "KFC", category: "速食 (Fast Food)" },
   { id: 11, name: "Subway", category: "速食 (Fast Food)" },
   { id: 12, name: "Wendy's", category: "速食 (Fast Food)" },
@@ -44,7 +41,6 @@ const initialRestaurants: Restaurant[] = [
   { id: 29, name: "Time Thai", category: "外食 (Dine-in)" },
 ];
 
-// Named export for the main component
 export const App: React.FC = () => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>(initialRestaurants);
   const [selectedRestaurant, setSelectedRestaurant] = useState<string | null>(null);
@@ -52,32 +48,34 @@ export const App: React.FC = () => {
   const [newRestaurantName, setNewRestaurantName] = useState<string>('');
   const [newRestaurantCategory, setNewRestaurantCategory] = useState<Category>(allCategories[0]);
 
-  // 新增的狀態：追蹤哪些類別被選中
-  const [activeCategories, setActiveCategories] = useState<Category[]>(allCategories.slice());
+  const primaryCategories: Category[] = allCategories.filter(c => c !== '外食/外帶 (Dine-in/Takeout)');
+  const [activeCategories, setActiveCategories] = useState<Category[]>(primaryCategories);
 
-  // 使用 useMemo 根據活動類別過濾餐廳清單
   const filteredRestaurants = useMemo(() => {
-    return restaurants.filter(restaurant => activeCategories.includes(restaurant.category as Category));
+    return restaurants.filter(restaurant => {
+        const category = restaurant.category;
+
+        if (category === '外食/外帶 (Dine-in/Takeout)') {
+            const dineInActive = activeCategories.includes('外食 (Dine-in)');
+            const takeOutActive = activeCategories.includes('外帶 (Takeout)');
+            return dineInActive || takeOutActive;
+        } else {
+            return activeCategories.includes(category);
+        }
+    });
   }, [restaurants, activeCategories]);
 
-
-  // 處理類別勾選框的變化
   const handleCategoryToggle = (category: Category) => {
     setActiveCategories(prevCategories => {
       if (prevCategories.includes(category)) {
-        // 移除類別
         return prevCategories.filter(c => c !== category);
       } else {
-        // 新增類別
         return [...prevCategories, category];
       }
     });
-    // 清空選擇結果，因為過濾列表已變
     setSelectedRestaurant(null);
   };
 
-
-  // Function to handle the dice roll simulation
   const handleRoll = () => {
     const rollPool = filteredRestaurants;
 
@@ -89,7 +87,6 @@ export const App: React.FC = () => {
     setIsRolling(true);
     setSelectedRestaurant("決定中...");
 
-    // Simulate rolling animation (shaking/delay)
     let rollCount = 0;
     const interval = setInterval(() => {
       // Select a random restaurant during the "roll" from the filtered pool
@@ -97,14 +94,14 @@ export const App: React.FC = () => {
       setSelectedRestaurant(rollPool[randomIndex].name);
       rollCount++;
 
-      if (rollCount > 15) { // Stop after 15 fast "rolls"
+      if (rollCount > 10) { // Stop after 15 fast "rolls"
         clearInterval(interval);
         setIsRolling(false);
         // Final selection is random
         const finalIndex = Math.floor(Math.random() * rollPool.length);
         setSelectedRestaurant(rollPool[finalIndex].name);
       }
-    }, 80); // Quick interval for visual effect
+    }, 40); // Quick interval for visual effect
   };
 
   // Function to handle adding a new restaurant
@@ -112,7 +109,6 @@ export const App: React.FC = () => {
     e.preventDefault();
     if (newRestaurantName.trim() === '') return;
 
-    // 確保 ID 是獨一無二的
     const maxId = restaurants.length > 0 ? Math.max(...restaurants.map(r => r.id)) : 0;
     const newId = maxId + 1;
 
@@ -176,8 +172,11 @@ export const App: React.FC = () => {
 
         {/* --- 類別篩選器 --- */}
         <h2 className="text-xl font-bold text-gray-700 mb-3">篩選類型</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 p-4 bg-gray-50 rounded-lg border">
-          {allCategories.map((category) => (
+        {/* 調整為 grid-cols-3，並過濾掉 '外食/外帶' 類別的勾選框 */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-4 bg-gray-50 rounded-lg border">
+          {allCategories
+            .filter(category => category !== '外食/外帶 (Dine-in/Takeout)') // 移除 '外食/外帶' 的選項
+            .map((category) => (
             <label key={category} className="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-white transition duration-150">
               <input
                 type="checkbox"
@@ -186,7 +185,7 @@ export const App: React.FC = () => {
                 disabled={isRolling}
                 className="form-checkbox h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50"
               />
-              <span className="text-gray-700 font-medium">{category}</span>
+              <span className="text-gray-700 font-medium text-sm md:text-base">{category}</span>
             </label>
           ))}
         </div>
@@ -237,7 +236,12 @@ export const App: React.FC = () => {
               <div
                 key={restaurant.id}
                 // 使用樣式來突出顯示非活動類別的餐廳
-                className={`flex items-center justify-between p-3 rounded-lg border border-gray-200 shadow-sm transition duration-150 ${activeCategories.includes(restaurant.category) ? 'bg-gray-50 hover:bg-gray-100' : 'bg-gray-200 opacity-60'}`}
+                className={`flex items-center justify-between p-3 rounded-lg border border-gray-200 shadow-sm transition duration-150 ${
+                    activeCategories.includes(restaurant.category) ||
+                    (restaurant.category === '外食/外帶 (Dine-in/Takeout)' &&
+                     (activeCategories.includes('外食 (Dine-in)') || activeCategories.includes('外帶 (Takeout)')))
+                    ? 'bg-gray-50 hover:bg-gray-100'
+                    : 'bg-gray-200 opacity-60'}`}
               >
                 <span className="text-gray-700 font-medium">
                     <span className="font-light text-sm text-indigo-500 mr-2">[{restaurant.category.split(' ')[0]}]</span>
